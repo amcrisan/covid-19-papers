@@ -1,0 +1,101 @@
+library(jsonlite)
+library(adjutant)
+library(dplyr)
+library(ggplot2)
+
+dat<-read.csv(file="./data/all_sources_metadata_2020-03-13.csv",header=TRUE)
+
+files<- c(list.files(path = "./data/comm_use_subset/comm_use_subset/",full.names = TRUE),
+          list.files(path = "./data/noncomm_use_subset/noncomm_use_subset/",full.names = TRUE),
+          list.files(path = "./data/biorxiv_medrxiv/biorxiv_medrxiv/",full.names=TRUE),
+          list.files(path="./data/pmc_custom_license/pmc_custom_license/",full.names=TRUE))
+
+
+res<-c()
+
+#convert JSON to data frame
+
+for(i in 1:length(files)){
+  tmp<-read_json(files[i])
+  
+  metatmp<-dat[which(dat$sha == tmp$paper_id),]
+
+  txt<- paste(sapply(tmp$body_text,function(x){x$text}),collapse = " " )
+  abstract<-ifelse(length(tmp$list)==0, "", unlist(tmp$abstract[[1]]$text))
+  
+  txt<-paste(abstract,txt,collapse=" ")
+  
+  #Formatting for Adjutant
+  risResults<-data.frame(PMID=tmp$paper_id,
+                         YearPub=metatmp$publish_time,
+                         Journal=as.character(metatmp$journal),
+                         Authors=metatmp$authors,
+                         Title=as.character(tmp$metadata$title),
+                         Abstract=txt,
+                         articleType = metatmp$abstract,
+                         language = "eng",
+                         pmcCitationCount = 0,
+                         pmcID = metatmp$pmcid,
+                         doi = metatmp$doi,
+                         stringsAsFactors = FALSE)
+  
+  res<-rbind(res,risResults)
+}
+
+#include and format papers that don't have full text
+no_txt<-dplyr::anti_join(dat, res, by=c("sha" = "PMID"))
+
+#formatting for Adjutant
+no_txt_df<-data.frame(PMID=no_txt$sha,
+                      YearPub=no_txt$publish_time,
+                      Journal=no_txt$journal,
+                      Authors=no_txt$authors,
+                      Title=as.character(no_txt$title),
+                      Abstract=as.character(no_txt$abstract),
+                      articleType = as.character(no_txt$source_x),
+                      language = "eng",
+                      pmcCitationCount = 0,
+                      pmcID = no_txt$pmcid,
+                      doi = as.character(no_txt$doi),
+                      stringsAsFactors = FALSE)
+
+#Convert the stuff that doesn't overlap
+
+
+df <-cbind(res,no_txt_df)
+
+tidy_df<-tidyCorpus(corpus = df) #tidy corpus
+tsneObj<-runTSNE(tidy_df,check_duplicates=FALSE)
+
+#add t-SNE co-ordinates to df object
+df<-inner_join(df,tsneObj$Y,by="PMID")
+optClusters <- optimalParam(df)
+
+df<-inner_join(df,optClusters$retItems,by="PMID") %>%
+  mutate(tsneClusterStatus = ifelse(tsneCluster == 0, "not-clustered","clustered"))
+
+
+clustNames<-df %>%
+  group_by(tsneCluster)%>%
+  mutate(tsneClusterNames = getTopTerms(clustPMID = PMID,
+                                        clustValue=tsneCluster,topNVal = 2,tidyCorpus=tidy_df)) %>%
+  select(PMID,tsneClusterNames) %>%
+  ungroup()
+
+#update document corpus with cluster names
+df<-inner_join(df,clustNames,by=c("PMID","tsneCluster"))
+
+clusterNames <- df %>%
+  dplyr::group_by(tsneClusterNames) %>%
+  dplyr::summarise(medX = median(tsneComp1),
+                   medY = median(tsneComp2)) %>%
+  dplyr::filter(tsneClusterNames != "Not-Clustered")
+
+ggplot(df,aes(x=tsneComp1,y=tsneComp2,group=tsneClusterNames))+
+  geom_point(aes(colour = tsneClusterStatus),alpha=0.2)+
+  stat_ellipse(aes(alpha=tsneClusterStatus))+
+  geom_label(data=clusterNames,aes(x=medX,y=medY,label=tsneClusterNames),size=3,colour="red")+
+  scale_colour_manual(values=c("black","blue"),name="cluster status")+
+  scale_alpha_manual(values=c(1,0),name="cluster status")+ #remove the cluster for noise
+  theme_bw()
+
