@@ -39,5 +39,5 @@ pageRank_df<-data.frame(PMID = pageRank_df[,1],
                         clustRank = as.numeric(pageRank_df[,2]),
                         stringsAsFactors = FALSE)
 
-df2<-dplyr::left_join(df,pageRank_df,by="PMID")
+df<-dplyr::left_join(df,pageRank_df,by="PMID")
 
