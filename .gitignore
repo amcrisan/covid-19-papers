@@ -5,5 +5,5 @@
 
 data
 intermediate_analysis.Rda
-upload_files.R
+./scripts/upload_files.R
 tidy_corpus*

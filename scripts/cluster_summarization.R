@@ -2,9 +2,8 @@
 # with some modifications.
 library(dplyr)
 library(tidytext)
-library(textmineR)
-library(igraph)
-library(digest)
+library(stringr)
+library(stringr)
 library(stringr)
 library(SnowballC)
 
