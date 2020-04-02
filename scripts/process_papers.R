@@ -5,7 +5,7 @@ library(dplyr)
 library(ggplot2)
 
 #adding sha for docs that don't have it, makes life way better, could introduc some replicates though.
-dat<-read.csv(file="./data/all_sources_metadata_2020-03-13_Ana_Cleaned.csv",header=TRUE,stringsAsFactors = FALSE) %>%
+dat<-read.csv(file="./cleaned_data/all_sources_metadata_2020-03-13_Ana_Cleaned.csv",header=TRUE,stringsAsFactors = FALSE) %>%
   mutate(sha= ifelse(sha == "", paste(sample(c(letters,0:9),52,replace=TRUE),collapse =""), sha))
 
 #files<- list.files(path = "./data/comm_use_subset/comm_use_subset/",full.names = TRUE)[1:500]
