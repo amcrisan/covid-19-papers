@@ -1,5 +1,5 @@
 #adding sha for docs that don't have it, makes life way better, could introduc some replicates though.
-dat<-read.csv(file="./data/all_sources_metadata_2020-03-13.csv",header=TRUE,stringsAsFactors = FALSE)
+dat<-read.csv(file="./data/metadata.csv",header=TRUE,stringsAsFactors = FALSE)
 
 #remove articles with no abstracts or full text, just not immediately useful.
 # ----- articles that match files ------

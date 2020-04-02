@@ -5,8 +5,7 @@ library(dplyr)
 library(ggplot2)
 
 #adding sha for docs that don't have it, makes life way better, could introduc some replicates though.
-dat<-read.csv(file="./cleaned_data/all_sources_metadata_2020-03-13_Ana_Cleaned.csv",header=TRUE,stringsAsFactors = FALSE) %>%
-  mutate(sha= ifelse(sha == "", paste(sample(c(letters,0:9),52,replace=TRUE),collapse =""), sha))
+dat<-read.csv(file="./data/metadata.csv",header=TRUE,stringsAsFactors = FALSE)
 
 #files<- list.files(path = "./data/comm_use_subset/comm_use_subset/",full.names = TRUE)[1:500]
 files<- c(list.files(path = "./data/comm_use_subset/comm_use_subset/",full.names = TRUE),
@@ -18,13 +17,6 @@ files<-data.frame(sha = gsub(".json","",basename(files)),
                   path = files,
                   stringsAsFactors = FALSE)
 
-# ---- after removing all the repeats ---
-keep_files<- dat %>%
-  filter(nchar(sha) == 40)
-
-files<- filter(files,sha %in% keep_files[,"sha"])
-
-
 # ---- grab the full text ----
 
 res<-c()
@@ -34,7 +26,7 @@ res<-c()
 for(filePath in files$path){
   tmp<-read_json(filePath)
   
-  metatmp<-dat[which(dat$sha == tmp$paper_id),]
+  metatmp<-dat[grepl(tmp$paper_id,dat$sha),]
 
   txt<-sapply(tmp$body_text,function(x){x$text})
   txt<- paste(sapply(tmp$body_text,function(x){x$text}),collapse = " " )
@@ -43,7 +35,7 @@ for(filePath in files$path){
   txt<-paste(abstract,txt,collapse=" ")
   
   #Formatting for Adjutant
-  risResults<-data.frame(PMID=tmp$paper_id,
+  risResults<-data.frame(PMID=metatmp$cord_uid,
                          YearPub=metatmp$publish_time,
                          Journal=as.character(metatmp$journal),
                          Authors=metatmp$authors,
@@ -62,10 +54,10 @@ for(filePath in files$path){
 save.image("intermediateAnalysis2.Rda")
 
 #include and format papers that don't have full text
-no_txt<-dplyr::anti_join(dat, files, by="sha")
+no_txt<-dplyr::anti_join(dat, res, by="cord_uid")
 
 #formatting for Adjutant
-no_txt_df<-data.frame(PMID=no_txt$sha,
+no_txt_df<-data.frame(PMID=no_txt$cord_uid,
                       YearPub=no_txt$publish_time,
                       Journal=no_txt$journal,
                       Authors=no_txt$authors,
