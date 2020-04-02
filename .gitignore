@@ -3,15 +3,9 @@
 .RData
 .Ruserdata
 
-data/all_sources_metadata_2020-03-13*
-data/biorxiv_medrxiv
-data/comm_use_subset
-data/data/comm_use_subset
-data/pmc_custom_license
-data/json_schema.txt
-data/COVID.DATA.LIC.AGMT
-
+data
 intermediate_analysis.Rda
+intermediateAnalysis2.Rda
 scripts/upload_files.R
 tidy_corpus*
 readme.html
