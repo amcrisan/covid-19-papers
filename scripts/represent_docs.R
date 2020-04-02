@@ -4,7 +4,7 @@ library(dplyr)
 library(tidytext)
 library(igraph)
 
-load("intermediate_analysis.Rda")
+load("intermediate_analysis2.Rda")
 
 #Use the cosine similarity to created a weight graph
 #Use pagerank to rank articles.
