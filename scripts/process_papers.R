@@ -11,7 +11,7 @@ dat<-read.csv(file="./data/metadata.csv",header=TRUE,stringsAsFactors = FALSE)
 files<- c(list.files(path = "./data/comm_use_subset/comm_use_subset/",full.names = TRUE),
           list.files(path = "./data/noncomm_use_subset/noncomm_use_subset/",full.names = TRUE),
           list.files(path = "./data/biorxiv_medrxiv/biorxiv_medrxiv/",full.names=TRUE),
-          list.files(path="./data/pmc_custom_license/pmc_custom_license/",full.names=TRUE))
+          list.files(path="./data/custom_license/custom_license/",full.names=TRUE))
 
 files<-data.frame(sha = gsub(".json","",basename(files)),
                   path = files,
@@ -50,6 +50,11 @@ for(filePath in files$path){
   
   res<-rbind(res,risResults)
 }
+
+
+res<-res %>%
+  group_by(PMID) %>%
+  sample_n(1)
 
 save.image("intermediateAnalysis2.Rda")
 

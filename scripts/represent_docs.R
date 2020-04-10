@@ -4,7 +4,7 @@ library(dplyr)
 library(tidytext)
 library(igraph)
 
-load("intermediate_analysis2.Rda")
+load("intermediateAnalysis2.Rda")
 
 #Use the cosine similarity to created a weight graph
 #Use pagerank to rank articles.
@@ -40,4 +40,6 @@ pageRank_df<-data.frame(PMID = pageRank_df[,1],
                         stringsAsFactors = FALSE)
 
 df<-dplyr::left_join(df,pageRank_df,by="PMID")
+
+save.image("intermediateAnalysis_rank2.Rda")
 

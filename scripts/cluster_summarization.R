@@ -3,14 +3,14 @@
 library(dplyr)
 library(tidytext)
 library(stringr)
-library(stringr)
-library(stringr)
+library(digest)
+library(igraph)
 library(SnowballC)
 
 #To speed things up, I favoured longer sentences with more words. This introduces
 #some biases into what it means to be a representative sentence.
 
-load("intermediate_analysis.Rda")
+df<-read.csv(file="cleaned_data/all_sources_metadata_2020-03-13_Ana_Cleaned.csv",header=TRUE)
 
 stop_words<-tidytext::stop_words
 customStopTerms <-data.frame(word=c("abstract", "text", "abstracttext","introduction","background","method",
@@ -19,8 +19,8 @@ customStopTerms <-data.frame(word=c("abstract", "text", "abstracttext","introduc
                                     "author","copyright","funder","holder−preprin",
                                     "biorxiv", "copyright", "doi", "doi.org", "holder",
                                     "http","peer","preprint","review",
-                                    "journal", "articl", "publi","includ", "studi"))
-clustName = "immun-vaccin"
+                                    "journal", "articl", "publi","includ", "studi","further","therefore","moreover"))
+clustName = "vaccin-immun"
 
 clusterSummary<-c()
 
@@ -30,10 +30,16 @@ for(clustName in unique(df$tsneClusterNames)){
   #Count of sentences occuring across abstracts
   tidyclust_df <- df %>%
     filter(tsneClusterNames == clustName) %>%
-    select(PMID,Title,Abstract) %>%
-    mutate(text = paste0(Title,Abstract)) %>%
+    select(sha,title,abstract) %>%
+    mutate(text = paste0(title,abstract)) %>%
     unnest_tokens(sentence, text,token = "sentences") %>%
-    filter(nchar(sentence)>=250) %>%
+    mutate(numFrac = sapply(sentence, function(x){
+      tokens <- unlist(strsplit(as.character(x),"\\s+",perl = TRUE))
+      isNum = grepl('[0-9]+',tokens)
+      numFrac<-sum(isNum)/length(isNum)
+    })) %>%
+    filter(numFrac<.15) %>%
+    filter(nchar(sentence)>=10) %>%
     mutate(sentenceTmp = sentence) %>%
     mutate(sentenceID =  sapply(sentence,function(x){digest(x, "md5", serialize = FALSE)}))%>%
     unnest_tokens(word,sentenceTmp) %>%
@@ -46,7 +52,7 @@ for(clustName in unique(df$tsneClusterNames)){
   lowSentence<- tidyclust_df%>%
     group_by(sentenceID) %>%
     count(name='secImp')%>% 
-    filter(secImp>20) %>% #wanted sentences that have lots of words
+    filter(secImp>=10) %>% #wanted sentences that have lots of words
     ungroup()
   
   tidyCorpus_df<-tidyclust_df %>%
